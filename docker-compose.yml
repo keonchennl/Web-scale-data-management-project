@@ -1,19 +1,64 @@
 version: '3.0' 
 services: 
-  db:
-    container_name: postgresql
+  db-order:
+    container_name: postgresql-order
     image: postgres
     restart: always
     volumes:
       - type: bind # use bind mode otherwise the sh file is mounted as a folder
-        source: ./deployment/database/init_db.sh
-        target: /docker-entrypoint-initdb.d/init_db.sh
+        source: ./deployment/database/init_db_order.sh
+        target: /docker-entrypoint-initdb.d/init_db_order.sh
     environment:
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgresql
         PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432" # Expose to host for testing
+      - "6432:5432" # Expose to host for testing
+
+  db-stock:
+    container_name: postgresql-stock
+    image: postgres
+    restart: always
+    volumes:
+      - type: bind # use bind mode otherwise the sh file is mounted as a folder
+        source: ./deployment/database/init_db_stock.sh
+        target: /docker-entrypoint-initdb.d/init_db_stock.sh
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgresql
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "6433:5432" # Expose to host for testing
+
+  db-payment:
+    container_name: postgresql-payment
+    image: postgres
+    restart: always
+    volumes:
+      - type: bind # use bind mode otherwise the sh file is mounted as a folder
+        source: ./deployment/database/init_db_payment.sh
+        target: /docker-entrypoint-initdb.d/init_db_payment.sh
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgresql
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "6434:5432" # Expose to host for testing
+
+  db-seata:
+    container_name: postgresql-seata
+    image: postgres
+    restart: always
+    volumes:
+      - type: bind # use bind mode otherwise the sh file is mounted as a folder
+        source: ./deployment/database/init_db_seata.sh
+        target: /docker-entrypoint-initdb.d/init_db_seata.sh
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgresql
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "6435:5432" # Expose to host for testing
 
   adminer:
     image: adminer
@@ -31,7 +76,7 @@ services:
     image: seataio/seata-server:1.4.2
     hostname: seata-server
     depends_on:
-      - db
+      - db-seata
       - redis
     ports:
       - "8091:8091"
@@ -44,8 +89,8 @@ services:
       
   eureka-server: 
     container_name: eureka-server
-    image: keonchennl/wdm22-project:eureka-server
-    # build: ./eureka-server
+#    image: keonchennl/wdm22-project:eureka-server
+    build: ./eureka-server
     depends_on:
       - seata-server
     ports: 
@@ -54,27 +99,30 @@ services:
   # WDM services
   order-service:
     container_name: order-service
-    image: keonchennl/wdm22-project:order-service
-    # build: ./order-service
+#    image: keonchennl/wdm22-project:order-service
+    build: ./order-service
     depends_on:
+      - db-order
       - eureka-server
     ports:
     - "8081:8081"
 
   stock-service:
     container_name: stock-service
-    image: keonchennl/wdm22-project:stock-service
-    # build: ./stock-service
+#    image: keonchennl/wdm22-project:stock-service
+    build: ./stock-service
     depends_on:
+      - db-stock
       - eureka-server
     ports:
       - "8082:8082"
 
   payment-service:
     container_name: payment-service
-    image: keonchennl/wdm22-project:payment-service
-    # build: ./payment-service
+#    image: keonchennl/wdm22-project:payment-service
+    build: ./payment-service
     depends_on:
+      - db-payment
       - eureka-server
     ports:
       - "8083:8083"
